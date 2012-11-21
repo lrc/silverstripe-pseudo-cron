@@ -1,2 +1,3 @@
-silverstripe-pseudo-cron
+Silverstripe Pseudo Cron
 ========================
+
