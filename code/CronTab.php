@@ -39,7 +39,7 @@ class CronTab extends Controller {
 			// Although it's set to 1ms, in reality the timeout will almost always be approx 1 second due to cURL not 
 			// including the nameserver lookup, and forcing a minimum 1 second timeout on that portion of the request
 			// (which isn't even required).
-			CURLOPT_TIMEOUT_MS => 1 
+			CURLOPT_TIMEOUT => 1 
 		);
 		
 		curl_setopt_array($ch, $options);
