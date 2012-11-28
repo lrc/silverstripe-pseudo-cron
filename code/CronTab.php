@@ -90,8 +90,9 @@ class CronTab extends Controller {
 		
 		// Get all the jobs (and give extensions a chance).
 		$jobs = DataObject::get('CronJob', 'StartTime <= ' . Convert::raw2sql($time) . ' AND NextRun <= ' . Convert::raw2xml($time));
-		$count = $jobs->count();
 		$this->extend('augmentCronJobs', $jobs);
+		
+		$count = $jobs->count();
 		
 		// Execute crons that need running.
 		if ( $count > 0 ) foreach( $jobs as $job ) $job->execute();
