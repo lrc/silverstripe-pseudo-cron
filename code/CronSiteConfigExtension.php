@@ -5,13 +5,11 @@
  * 
  * @package pseudocron
  */
-class CronSiteConfigExtension extends DataObjectDecorator {
+class CronSiteConfigExtension extends DataExtension {
 	
-	public function extraStatics() {
-		return array('db'=>array(
-			'NextCron' => 'Int',
-			'CronRunning' => 'Varchar(20)'
-		));
-	}
+	public static $db = array(
+		'NextCron' => 'Int',
+		'CronRunning' => 'Varchar(20)'
+	);
 	
 }

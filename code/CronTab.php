@@ -47,7 +47,7 @@ class CronTab extends Controller {
 		// Fire the request and move on.
 		$start = microtime(true);
 		curl_exec($ch);
-		SS_Log::log('Initiating the pseudo cron system took ' . (microtime(true)-$start) . ' seconds.', SS_Log::NOTICE);
+		CronLog::log('Initiating the pseudo cron system took ' . (microtime(true)-$start) . ' seconds.', CronLog::NOTICE);
 	}
 	
 	/**
@@ -56,7 +56,7 @@ class CronTab extends Controller {
 	 * @param array $params An array of parameters to setup the job.
 	 */
 	public static function add($params) {
-		$job = Object::create('CronJob');
+		$job = CronJob::create();
 		
 		// Populate with passed params
 		foreach (array_keys(CronJob::$db) as $field) {
@@ -101,6 +101,6 @@ class CronTab extends Controller {
 		$conf->NextCron = min( intval($next_cron), time()+86400 );
 		$conf->CronRunning = null;
 		$conf->write();
-		SS_Log::log('Running the pseudo cron system took ' . (microtime(true)-$start) . ' seconds ('. $count . ' jobs).', SS_Log::NOTICE);
+		CronLog::log('Running the pseudo cron system took ' . (microtime(true)-$start) . ' seconds ('. $count . ' jobs).', CronLog::NOTICE);
 	}
 }
