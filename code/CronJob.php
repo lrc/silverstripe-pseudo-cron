@@ -48,12 +48,10 @@ class CronJob extends DataObject {
 	public function execute() {	
 		$now = time();
 		
-		$result = false;
-		
 		if ( is_callable( $this->Callback ) ) {
 			try {
 				
-				$result = @call_user_func( $this->Callback, $paramarray );
+				$this->Result = @call_user_func( $this->Callback, $paramarray );
 				
 			} catch (Exception $e) {
 				
@@ -70,7 +68,6 @@ class CronJob extends DataObject {
 				SS_Log::log($e, SS_Log::ERR);
 			}
 		}
-		$this->Result = $result;
 
 		// it ran successfully, so check if it's time to delete it.
 		if ( $this->EndTime > 0 && $now >= $this->EndTime ) {
