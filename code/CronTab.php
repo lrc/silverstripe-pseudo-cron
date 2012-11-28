@@ -92,6 +92,9 @@ class CronTab extends Controller {
 		
 		$count = $jobs->count();
 		
+		// Attempt increase timelimit.
+		increase_time_limit_to();
+		
 		// Execute crons that need running.
 		if ( $count > 0 ) foreach( $jobs as $job ) $job->execute();
 
