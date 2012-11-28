@@ -26,28 +26,26 @@ class CronTab extends Controller {
 		$conf->CronRunning = $run_time;
 		$conf->write();
 		
-		// Make the request
-		$ch = curl_init();
-		
-		$options = array(
-			
-			// Use IP and Host header to attempt to avoid DNS lookup. cURL doesn't seem to be helping though.
-			CURLOPT_URL => 'http://' . $_SERVER['SERVER_ADDR'] . (($_SERVER['SERVER_PORT'] == '80') ? '' : ':'.$_SERVER['SERVER_PORT'] ) . Director::baseURL() . __CLASS__ . "/call/$run_time",
-			CURLOPT_HTTPHEADER => array('Host: ' . $_SERVER['HTTP_HOST']),
-			CURLOPT_FOLLOWLOCATION => true,
-			// The timeout is low because we want it to timeout quickly and continue. 
-			// Although it's set to 1ms, in reality the timeout will almost always be approx 1 second due to cURL not 
-			// including the nameserver lookup, and forcing a minimum 1 second timeout on that portion of the request
-			// (which isn't even required).
-			CURLOPT_TIMEOUT => 1 
-		);
-		
-		curl_setopt_array($ch, $options);
+		// Open the socket
+		$fp = @fsockopen($_SERVER['SERVER_ADDR'], $_SERVER['SERVER_PORT'], $errno, $errstr, .001);
+		if ( $fp === false ) {
+			// Log it (twiced for good measure).
+			CronLog::log("Cron system failed to run because a socket could not be established.", CronLog::ERR);
+			SS_Log::log("Cron system failed to run because a socket could not be established.", SS_Log::ERR);
+			return;
+		}
+
+		// Construct the request
+		$out = "GET " . Director::baseURL() . __CLASS__ . "/call/$run_time HTTP/1.1\r\n";
+		$out.= "Host: " . $_SERVER['HTTP_HOST'] . "\r\n";
+		$out.= "Content-Type: application/x-www-form-urlencoded\r\n";
+		$out.= "Content-Length: 1\r\n";
+		$out.= "Connection: Close\r\n\r\n ";
 		
 		// Fire the request and move on.
-		$start = microtime(true);
-		curl_exec($ch);
-		CronLog::log('Initiating the pseudo cron system took ' . (microtime(true)-$start) . ' seconds.', CronLog::NOTICE);
+		fwrite($fp, $out);
+		fclose($fp);
+		CronLog::log('Initiating the pseudo cron system took ' . (microtime(true)-$now) . ' seconds.', CronLog::NOTICE);
 	}
 	
 	/**
