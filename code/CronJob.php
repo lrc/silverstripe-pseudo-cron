@@ -81,11 +81,14 @@ class CronJob extends DataObject {
 
 		$this->LastRun = $now;
 		$this->NextRun = $now + $this->Increment;
-		$this->write();
+		
+		// Execute isn't in the business of creating jobs
+		if ( $this->ID ) $this->write();
+		CronLog::log("Cron job '$this->Name' took " . (microtime(true)-$now) . ' seconds to run.', CronLog::NOTICE);
 	}
 	
 	/**
-	 * Setter for Callback field so it can be automaticall serialized.
+	 * Setter for Callback field so it can be automatically serialized.
 	 *
 	 * @param mixed $value 
 	 */
