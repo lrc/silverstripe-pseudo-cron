@@ -45,7 +45,7 @@ class CronTab extends Controller {
 		// Fire the request and move on.
 		fwrite($fp, $out);
 		fclose($fp);
-		CronLog::log('Initiating the pseudo cron system took ' . (microtime(true)-$now) . ' seconds.', CronLog::NOTICE);
+		CronLog::log('Initiating the pseudo cron system took ' . number_format( (microtime(true)-$now), 2 ) . ' seconds.', CronLog::NOTICE);
 	}
 	
 	/**
@@ -103,6 +103,6 @@ class CronTab extends Controller {
 		$conf->NextCron = min( intval($next_cron), time()+86400 );
 		$conf->CronRunning = null;
 		$conf->write();
-		CronLog::log('Running the pseudo cron system took ' . (microtime(true)-$start) . ' seconds ('. $count . ' jobs).', CronLog::NOTICE);
+		CronLog::log('Running the pseudo cron system took ' . number_format( (microtime(true)-$start), 2 ) . ' seconds ('. $count . ' jobs).', CronLog::NOTICE);
 	}
 }

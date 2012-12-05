@@ -59,11 +59,14 @@ class CronJob extends DataObject {
 			
 				if ($this->Notify) {
 					$to = ($this->Notify == 'admin') ? Email::getAdminEmail() : $this->Notify;
+					
+//					$emailWriter = new SS_LogEmailWriter($to);
+//					$emailWriter->write($e);
 					$email = new Email('no-reply@'.$_SERVER['HTTP_HOST'], $to, "CronJob '$this->Name' failed", $e->getMessage());
 					$email->send();
 				}
 				
-				// Log it (twiced for good measure).
+				// Log it (twice for good measure).
 				CronLog::log($e, CronLog::ERR);
 				SS_Log::log($e, SS_Log::ERR);
 			}
@@ -72,7 +75,7 @@ class CronJob extends DataObject {
 		// it ran successfully, so check if it's time to delete it.
 		if ( $this->EndTime > 0 && $now >= $this->EndTime ) {
 			$this->delete();
-			CronLog::log("Cron job '$this->Name' run for the last time in " . (microtime(true)-$now) . ' seconds.', CronLog::NOTICE);
+			CronLog::log("Cron job '$this->Name' run for the last time in " . number_format( (microtime(true)-$now), 2 ) . ' seconds.', CronLog::NOTICE);
 			return;
 		}
 
@@ -81,7 +84,8 @@ class CronJob extends DataObject {
 		
 		// Execute isn't in the business of creating jobs
 		if ( $this->ID ) $this->write();
-		CronLog::log("Cron job '$this->Name' took " . (microtime(true)-$now) . ' seconds to run.', CronLog::NOTICE);
+		
+		CronLog::log("Cron job '$this->Name' took " . number_format( (microtime(true)-$now), 2 ) . ' seconds to run.', CronLog::NOTICE);
 	}
 	
 	/**
