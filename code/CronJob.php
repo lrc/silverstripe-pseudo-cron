@@ -58,10 +58,8 @@ class CronJob extends DataObject {
 				$this->Result = 'failed';
 			
 				if ($this->Notify) {
+					// todo: Maybe use EmailLogWriter
 					$to = ($this->Notify == 'admin') ? Email::getAdminEmail() : $this->Notify;
-					
-//					$emailWriter = new SS_LogEmailWriter($to);
-//					$emailWriter->write($e);
 					$email = new Email('no-reply@'.$_SERVER['HTTP_HOST'], $to, "CronJob '$this->Name' failed", $e->getMessage());
 					$email->send();
 				}
