@@ -80,7 +80,7 @@ class CronJob extends DataObject {
 		}
 
 		$this->LastRun = $now;
-		$this->NextRun = $now + $this->Increment;
+		$this->NextRun = $now + max($this->Increment, $this->config()->minimum_increment);
 		
 		// Execute isn't in the business of creating jobs
 		if ( $this->ID ) $this->write();
@@ -109,5 +109,17 @@ class CronJob extends DataObject {
 			return $result;
 		}
 		return $val;
+	}
+	
+	/**
+	 * Enforce that the Increment should be either null or greater than the minimum.
+	 * @param int|null $value The value to set.
+	 * @throws InvalidArgumentException
+	 */
+	public function setIncrement($value) {
+		if ( !(is_null($value) || is_int($value)) || (is_int($value) && $value < $this->config()->minimum_increment) ) {
+			throw new InvalidArgumentException('The increment must be greater than ' . $this->config()->minimum_increment . ' seconds.');
+		}
+		$this->setField('Increment', $value);
 	}
 }

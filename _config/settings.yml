@@ -1,0 +1,5 @@
+---
+Name: pseudocron
+---
+CronJob:
+  minimum_increment: 60
