@@ -15,36 +15,66 @@ class CronTab extends Controller {
 	 */
 	public static function run() {
 		
-		$conf = SiteConfig::current_site_config();
 		$now = microtime(true);
+		$site_config = SiteConfig::current_site_config();
+		$class_config = Config::inst()->forClass(__CLASS__);
 		
 		// Check that cron should run at all.
-		if ( $conf->NextCron > $now || ($conf->CronRunning && $conf->CronRunning > $now) ) return;
+		if ( $site_config->NextCron > $now || ($site_config->CronRunning && $site_config->CronRunning > $now) ) return;
 		
 		// Record that cron is running and set a timeout for 10 mins from now.
 		$run_time = $now + 600;
-		$conf->CronRunning = $run_time;
-		$conf->write();
+		$site_config->CronRunning = $run_time;
+		$site_config->write();
+		
+		// Connection details
+		if ($class_config->ssl === true) {
+			$tran = 'ssl';
+			$port = 443;
+		} elseif ($class_config->ssl === false) {
+			$tran = 'tcp';
+			$port = 80;
+		} else {
+			$tran = (Director::protocol() === 'https://') ? 'ssl' : 'tcp';
+			$port = $_SERVER['SERVER_PORT'];
+		}
+		
+		// IP Address is faster because it avoids a DNS lookup, but it doesn't work over SSL.
+		$host = ($tran === 'ssl') ? $_SERVER['HTTP_HOST'] : $_SERVER['SERVER_ADDR']; 
 		
 		// Open the socket
-		$fp = @fsockopen($_SERVER['SERVER_ADDR'], $_SERVER['SERVER_PORT'], $errno, $errstr, .001);
-		if ( $fp === false ) {
-			// Log it (twiced for good measure).
+		try {
+			$errno = null;
+			$errstr = null;
+			$fp = @fsockopen("$tran://$host", $port, $errno, $errstr, 1);
+			if ( $fp === false || $errno != 0) {
+				throw new CronException("A socket could not be established" . ((strlen($errstr)) ? " ($errstr)" : ''));
+			}
+		} catch (Exception $e) {
+			// Never let CronTab stop execution, but log it (twice for good measure).
 			CronLog::log("Cron system failed to run because a socket could not be established.", CronLog::ERR);
-			SS_Log::log("Cron system failed to run because a socket could not be established.", SS_Log::ERR);
+			SS_Log::log($e, SS_Log::ERR);
+			$site_config->CronRunning = null;
+			$site_config->write();
 			return;
 		}
 
 		// Construct the request
-		$out = "GET " . Director::baseURL() . __CLASS__ . "/call/$run_time HTTP/1.1\r\n";
-		$out.= "Host: " . $_SERVER['HTTP_HOST'] . "\r\n";
-		$out.= "Content-Type: application/x-www-form-urlencoded\r\n";
-		$out.= "Content-Length: 1\r\n";
-		$out.= "Connection: Close\r\n\r\n ";
+		$req = "GET " . Director::baseURL() . __CLASS__ . "/call/$run_time HTTP/1.1\r\n";
+		$req.= "Host: " . $_SERVER['HTTP_HOST'] . "\r\n";
+		$req.= "Connection: close\r\n\r\n";
 		
-		// Fire the request and move on.
-		fwrite($fp, $out);
-		fclose($fp);
+		// Fire the request and move on. 
+		// There is a potential error here which can't be caught because we don't wait for the server response.
+		$written = fwrite($fp, $req);
+		if ( !$written ) {
+			// Never let CronTab stop execution, but log it (twice for good measure).
+			CronLog::log("Cron system failed to run because the socket could not be written to.", CronLog::ERR);
+			SS_Log::log("Cron system failed to run because the socket could not be written to.", SS_Log::ERR);
+			$site_config->CronRunning = null;
+			$site_config->write();
+			return;
+		}
 		CronLog::log('Initiating the pseudo cron system took ' . number_format( (microtime(true)-$now), 2 ) . ' seconds.', CronLog::NOTICE);
 	}
 	
@@ -73,21 +103,20 @@ class CronTab extends Controller {
 	 */
 	public function call($request) {
 		
+		$this->config();
+		
 		$start = microtime(true);
 		
-		$conf = SiteConfig::current_site_config();
-		
-		if ( $request->latestParam('ID') != $conf->CronRunning ) return;
-
-		// Allow a longer than usual timelimit. This only works on host with safe mode DISABLED
-		if ( !ini_get( 'safe_mode' ) ) {
-			increase_time_limit_to( 600 );
+		$site_config = SiteConfig::current_site_config();
+		if ( !$request->latestParam('ID') || $request->latestParam('ID') != $site_config->CronRunning ) {
+			throw new CronException('CronTab->call run with incorrect ID.');
 		}
-		
+
 		$time = time();
 		
 		// Get all the jobs (and give extensions a chance).
-		$jobs = DataObject::get('CronJob', 'StartTime <= ' . Convert::raw2sql($time) . ' AND NextRun <= ' . Convert::raw2xml($time));
+		$jobs = DataObject::get('CronJob', "StartTime <= $time AND NextRun <= $time");
+		
 		$this->extend('augmentCronJobs', $jobs);
 		
 		$count = $jobs->count();
@@ -100,9 +129,9 @@ class CronTab extends Controller {
 
 		// set the next run time to the lowest next_run OR a max of one day.
 		$next_cron = DB::query( 'SELECT NextRun FROM CronJob ORDER BY NextRun ASC LIMIT 1' )->value();
-		$conf->NextCron = min( intval($next_cron), time()+86400 );
-		$conf->CronRunning = null;
-		$conf->write();
+		$site_config->NextCron = min( intval($next_cron), time()+86400 );
+		$site_config->CronRunning = null;
+		$site_config->write();
 		CronLog::log('Running the pseudo cron system took ' . number_format( (microtime(true)-$start), 2 ) . ' seconds ('. $count . ' jobs).', CronLog::NOTICE);
 	}
 }
