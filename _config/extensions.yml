@@ -1,9 +1,6 @@
 ---
 Name: pseudocronextensions
 ---
-SiteConfig:
-  extensions:
-    ['CronSiteConfigExtension']
 Controller:
   extensions:
     ['CronControllerExtension']
