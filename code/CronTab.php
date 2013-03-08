@@ -111,8 +111,6 @@ class CronTab extends Controller {
 		// Get all the jobs (and give extensions a chance).
 		$jobs = DataObject::get('CronJob', "StartTime <= $time AND NextRun <= $time");
 		
-		$this->extend('augmentCronJobs', $jobs);
-		
 		$count = $jobs->count();
 		
 		// Attempt increase timelimit.
