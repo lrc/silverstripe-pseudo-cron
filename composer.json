@@ -1,0 +1,24 @@
+{
+    "name": "lrc/silverstripe-pseudo-cron",
+    "description": "A cron like system for scheduled execution of background tasks.",
+    "type": "silverstripe-module",
+    "keywords": ["silverstripe", "cron", "scheduled tasks"],
+	"homepage": "https://github.com/lrc/silverstripe-pseudo-cron/",
+    "authors": [
+        {
+            "name": "Simon Elvery",
+            "email": "simon@elvery.net"
+        },
+        {
+            "name": "Left, Right & Centre",
+			"email": "hello@leftrightandcentre.com.au"
+        }
+    ],
+    "require": {
+		"silverstripe/framework": "3.0.3+",
+        "silverstripe/cms": "3.0.3+"
+    },
+	"support": {
+		"issues": "https://github.com/lrc/silverstripe-pseudo-cron/issues?state=open"
+	}
+}
