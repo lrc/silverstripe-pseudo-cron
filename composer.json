@@ -15,8 +15,8 @@
         }
     ],
     "require": {
-		"silverstripe/framework": "3.0.3+",
-        "silverstripe/cms": "3.0.3+"
+		"silverstripe/framework": ">=3.0.3",
+        "silverstripe/cms": ">=3.0.3"
     },
 	"support": {
 		"issues": "https://github.com/lrc/silverstripe-pseudo-cron/issues?state=open"
