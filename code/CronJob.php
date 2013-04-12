@@ -12,6 +12,7 @@ class CronJob extends DataObject {
 		'Callback' => 'Varchar(100)',
 		'LastRun' => 'Int',
 		'NextRun' => 'Int',
+		'Running' => 'Int',
 		'Increment' => 'Int', //86400, // one day
 		'StartTime' => 'Int',
 		'EndTime' => 'Int', //NULL,
@@ -48,10 +49,32 @@ class CronJob extends DataObject {
 	public function execute() {	
 		$now = time();
 		
+		// Don't run if it's already running.
+		if ($this->Running) {
+			
+			// Report if it's been running a while
+			if ( $this->running < $now-3600 && $this->Notify) {
+				// todo: Maybe use EmailLogWriter
+				$to = ($this->Notify == 'admin') ? Email::getAdminEmail() : $this->Notify;
+				$email = new Email('no-reply@'.$_SERVER['HTTP_HOST'], $to, "CronJob '$this->Name' still running after one hour");
+				$email->send();
+			}
+			return;
+			
+		} else {
+			
+			// CronJob->execute() isn't in the business of creating jobs, but a DB entry must exist to monitor running 
+			// of jobs. Setting end time to $now ensure's it gets deleted when the job finishes.
+			if ( ! $this->ID ) $this->EndTime = $now;
+			$this->Running = $now;
+			$this->write();
+			
+		}
+		
 		if ( is_callable( $this->Callback ) ) {
 			try {
 				
-				$this->Result = @call_user_func( $this->Callback, $paramarray );
+				$this->Result = @call_user_func( $this->Callback );
 				
 			} catch (Exception $e) {
 				
@@ -70,18 +93,17 @@ class CronJob extends DataObject {
 			}
 		}
 
-		// it ran successfully, so check if it's time to delete it.
+		$this->LastRun = $now;
+		$this->NextRun = $now + max($this->Increment, $this->config()->minimum_increment);
+		$this->Running = null;
+		$this->write();
+		
+		// It ran successfully, so check if it's time to delete it.
 		if ( $this->EndTime > 0 && $now >= $this->EndTime ) {
 			$this->delete();
 			CronLog::log("Cron job '$this->Name' run for the last time in " . number_format( (microtime(true)-$now), 2 ) . ' seconds.', CronLog::NOTICE);
 			return;
 		}
-
-		$this->LastRun = $now;
-		$this->NextRun = $now + max($this->Increment, $this->config()->minimum_increment);
-		
-		// Execute isn't in the business of creating jobs
-		if ( $this->ID ) $this->write();
 		
 		CronLog::log("Cron job '$this->Name' took " . number_format( (microtime(true)-$now), 2 ) . ' seconds to run.', CronLog::NOTICE);
 	}

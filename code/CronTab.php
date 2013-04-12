@@ -2,7 +2,7 @@
 
 /**
  * The equivalent of a crontab. This is a controller which wrangles all the possible
- * CronJob objects and executes them on schedule.
+ * CronJobs and executes them on (approximate) schedule.
  *
  * @package pseudocron
  */
@@ -102,6 +102,7 @@ class CronTab extends Controller {
 		
 		$start = microtime(true);
 		
+		// Check that this function was called from CronTab::run();
 		if ( !$request->latestParam('ID') || $request->latestParam('ID') != CronConfig::g('CronRunning') ) {
 			throw new CronException('CronTab->call run with incorrect ID.');
 		}
