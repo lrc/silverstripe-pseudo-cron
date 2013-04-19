@@ -47,7 +47,7 @@ class CronTab extends Controller {
 			$errstr = null;
 			$fp = @fsockopen("$tran://$host", $port, $errno, $errstr, 1);
 			if ( $fp === false || $errno != 0) {
-				throw new CronException("A socket could not be established" . ((strlen($errstr)) ? " ($errstr)" : ''));
+				throw new CronException("A socket could not be established for $tran://$host on port $port" . ((strlen($errstr)) ? " ($errstr)" : ''));
 			}
 		} catch (Exception $e) {
 			// Never let CronTab stop execution, but log it (twice for good measure).
